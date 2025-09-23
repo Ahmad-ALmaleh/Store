@@ -1,0 +1,42 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\AuthController;
+
+
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login',    [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+
+    Route::prefix("categories")->group(function () {
+        Route::get('/', [CategoryController::class, 'index']);     // عرض كل التصنيفات
+        Route::post('/', [CategoryController::class, 'store']);    // إضافة تصنيف جديد
+        Route::get('/{id}', [CategoryController::class, 'show']);  // عرض تصنيف محدد
+        Route::put('/{id}', [CategoryController::class, 'update']); // تحديث تصنيف
+        Route::delete('/{id}', [CategoryController::class, 'destroy']); // حذف تصنيف
+    });
+
+    Route::prefix("products")->group(function(){
+        Route::get('/', [ProductController::class, 'index']);
+        Route::post('/', [ProductController::class, 'store']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+        Route::put('/{id}', [ProductController::class, 'update']);
+        Route::delete('/{id}', [ProductController::class, 'destroy']);
+    });
+
+});
+
+/* Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum'); */
+
+
+
