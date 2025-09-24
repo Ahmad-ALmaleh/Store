@@ -68,6 +68,12 @@ class ProductController extends Controller
             'img_url'     => 'nullable|string',
             'quantity'    => 'nullable|integer|min:0',
             'category_id' => 'required|exists:categories,id',
+
+            // الخصومات
+            'discounts'   => 'nullable|array',
+            'discounts.*.discount_date'      => 'required_with:discounts|date',
+            'discounts.*.discount_percentage'=> 'required_with:discounts|numeric|min:1|max:100',
+
         ]);
 
         // نخزن user_id للمستخدم الحالي (اللي عامل login)
@@ -75,28 +81,38 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
 
-        return response()->json([
-            'message' => 'Product created successfully',
-            'data'    => $product
-        ], 201);
-    }
+        // إذا فيه خصومات
+        if (!empty($validated['discounts'])) {
+            foreach ($validated['discounts'] as $discountData) {
+                $product->discounts()->create($discountData);
+            }
+
+            return response()->json([
+                'message' => 'Product created successfully',
+                'data'    => $product->load('discounts') // نرجع المنتج ومعه الخصومات
+            ], 201);
+    }}
 
     /**
      * Display the specified resource.
      */
     public function show($id)
     {
-        $product = Product::with(['user', 'category'])->find($id);
+         // جلب المنتج مع المستخدم، التصنيف، والخصومات
+    $product = Product::with(['user', 'category', 'discounts'])->find($id);
 
-        if (!$product) {
-            return response()->json([
-                'message' => 'Product not found'
-            ], 404);
-        }
-
+    if (!$product) {
         return response()->json([
-            'data' => $product
-        ], 200);
+            'message' => 'Product not found'
+        ], 404);
+    }
+
+    // الـ Accessor getPriceAttribute في موديل Product سيحسب السعر النهائي تلقائيًا
+    // وبالتالي $product->price سيعطي السعر بعد الخصم
+
+    return response()->json([
+        'data' => $product
+    ], 200);
     }
 
     /**

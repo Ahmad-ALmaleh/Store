@@ -20,6 +20,7 @@ class Product extends Model
         'img_url',
         'quantity',
         'category_id',
+        'user_id', 
     ];
 
     protected $primaryKey = "id";
@@ -34,6 +35,29 @@ class Product extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // العلاقة مع الخصومات
+    public function discounts()
+    {
+        return $this->hasMany(Discount::class, 'product_id');
+    }
+
+    // Accessor لحساب السعر النهائي
+    public function getPriceAttribute($value)
+    {
+        $today = now()->toDateString();
+
+        $discount = $this->discounts()
+            ->where('discount_date', '<=', $today)
+            ->orderByDesc('discount_date')
+            ->first();
+
+        if ($discount) {
+            $value = $value - ($value * ($discount->discount_percentage / 100));
+        }
+
+        return $value;
     }
 
 }
