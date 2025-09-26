@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\CommentController;
 
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,7 +30,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [ProductController::class, 'show']);
         Route::put('/{id}', [ProductController::class, 'update']);
         Route::delete('/{id}', [ProductController::class, 'destroy']);
+
+        Route::prefix("/{product}/comments")->group(function (){
+            Route::get('/', [CommentController::class, 'index']);
+            Route::post('/', [CommentController::class, 'store']);
+            Route::put('/{comment}', [CommentController::class, 'update']);
+            Route::delete('/{comment}', [CommentController::class, 'destroy']);
+          });
     });
+
+
 
 });
 

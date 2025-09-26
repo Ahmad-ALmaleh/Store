@@ -20,7 +20,7 @@ class Product extends Model
         'img_url',
         'quantity',
         'category_id',
-        'user_id', 
+        'user_id',
     ];
 
     protected $primaryKey = "id";
@@ -58,6 +58,11 @@ class Product extends Model
         }
 
         return $value;
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 
 }
