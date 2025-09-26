@@ -6,7 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
-
+use App\Http\Controllers\LikeController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
@@ -37,6 +37,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{comment}', [CommentController::class, 'update']);
             Route::delete('/{comment}', [CommentController::class, 'destroy']);
           });
+
+          // Likes nested
+        Route::prefix("/{product}/likes")->middleware('auth:sanctum')->group(function () {
+            Route::get('/', [LikeController::class, 'index']);      // استعراض اللايكات
+            Route::post('/', [LikeController::class, 'store']);     // إضافة لايك
+            Route::delete('/', [LikeController::class, 'destroy']); // إزالة لايك
+        });
     });
 
 
