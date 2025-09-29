@@ -23,6 +23,10 @@ class Product extends Model
         'user_id',
     ];
 
+    protected $casts = [
+        'exp_date' => 'date', // يخلي exp_date يرجع كـ Carbon object
+    ];
+
     protected $primaryKey = "id";
 
     public  $timestamps = true;

@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CommentStoreRequest;
+use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
 use App\Models\Product;
 use Illuminate\Http\Request;
-
+use App\Http\Resources\CommentResource;
 class CommentController extends Controller
 {
     /**
@@ -23,7 +24,12 @@ class CommentController extends Controller
                             ->paginate($perPage);
 
         // استجابة JSON
-        return response()->json($comments, 200);
+        return CommentResource::collection(
+            $product->comments()
+                ->with('user') // جلب بيانات المستخدم
+                ->latest()
+                ->paginate(5)
+        );
     }
 
     /**
@@ -41,7 +47,7 @@ class CommentController extends Controller
 
     return response()->json([
         'message' => 'Comment added successfully',
-        'data'    => $comment
+        'data' => new CommentResource($comment->load('user'))
     ], 201);
 }
 
@@ -49,29 +55,25 @@ class CommentController extends Controller
     /**
      * Update a specific comment.
      */
-    public function update(Request $request, Product $product, Comment $comment)
-    {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
+    public function update(UpdateCommentRequest $request, Product $product, Comment $comment)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
 
-        // التحقق من ملكية التعليق
-        if ($comment->user_id !== $user->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $validated = $request->validate([
-            'content' => 'required|string|max:1000',
-        ]);
-
-        $comment->update([
-            'content' => $validated['content'],
-        ]);
-
-        return response()->json([
-            'message' => 'Comment updated successfully',
-            'data' => $comment
-        ], 200);
+    // التحقق من ملكية التعليق
+    if ($comment->user_id !== $user->id) {
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
+
+    $comment->update([
+        'content' => $request->validated()['content'],
+    ]);
+
+    return response()->json([
+        'message' => 'Comment added successfully',
+        'data' => new CommentResource($comment->load('user'))
+    ], 201);
+}
 
     /**
      * Remove a specific comment.
