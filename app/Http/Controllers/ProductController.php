@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
-
+use App\Http\Requests\ProductStoreRequest;
+use App\Http\Requests\ProductUpdateRequest;
 
 class ProductController extends Controller
 {
@@ -54,29 +55,12 @@ class ProductController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ProductStoreRequest $request)
     {
-
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'exp_date'    => 'nullable|date',
-            'img_url'     => 'nullable|string',
-            'quantity'    => 'nullable|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-
-            // الخصومات
-            'discounts'   => 'nullable|array',
-            'discounts.*.discount_date'      => 'required_with:discounts|date',
-            'discounts.*.discount_percentage'=> 'required_with:discounts|numeric|min:1|max:100',
-
-        ]);
-
-        // نخزن user_id للمستخدم الحالي (اللي عامل login)
+        $validated = $request->validated();
         $validated['user_id'] = $user->id;
 
         $product = Product::create($validated);
@@ -86,12 +70,13 @@ class ProductController extends Controller
             foreach ($validated['discounts'] as $discountData) {
                 $product->discounts()->create($discountData);
             }
+        }
 
-            return response()->json([
-                'message' => 'Product created successfully',
-                'data'    => $product->load('discounts') // نرجع المنتج ومعه الخصومات
-            ], 201);
-    }}
+        return response()->json([
+            'message' => 'Product created successfully',
+            'data'    => $product->load('discounts'),
+        ], 201);
+    }
 
     /**
      * Display the specified resource.
@@ -118,33 +103,24 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
-{
-    $product = Product::find($id);
+    public function update(ProductUpdateRequest $request, $id)
+    {
+        $product = Product::find($id);
 
-    if (!$product) {
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found',
+            ], 404);
+        }
+
+        $validated = $request->validated();
+        $product->update($validated);
+
         return response()->json([
-            'message' => 'Product not found'
-        ], 404);
+            'message' => 'Product updated successfully',
+            'data'    => $product,
+        ], 200);
     }
-
-    $validated = $request->validate([
-        'name'        => 'sometimes|string|max:255',
-        'price'       => 'sometimes|numeric|min:0',
-        'description' => 'nullable|string',
-        'exp_date'    => 'nullable|date',
-        'img_url'     => 'nullable|string',
-        'quantity'    => 'sometimes|integer|min:0',
-        'category_id' => 'sometimes|exists:categories,id',
-    ]);
-
-    $product->update($validated);
-
-    return response()->json([
-        'message' => 'Product updated successfully',
-        'data'    => $product
-    ], 200);
-}
 
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CommentStoreRequest;
 use App\Models\Comment;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -28,25 +29,22 @@ class CommentController extends Controller
     /**
      * Store a newly created comment for a product.
      */
-    public function store(Request $request, Product $product)
-    {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
+    public function store(CommentStoreRequest $request, Product $product)
+{
+    /** @var \App\Models\User $user */
+    $user = $request->user();
 
-        $validated = $request->validate([
-            'content' => 'required|string|max:1000',
-        ]);
+    $comment = $product->comments()->create([
+        'content' => $request->validated()['content'],
+        'user_id' => $user->id,
+    ]);
 
-        $comment = $product->comments()->create([
-            'content' => $validated['content'],
-            'user_id' => $user->id,
-        ]);
+    return response()->json([
+        'message' => 'Comment added successfully',
+        'data'    => $comment
+    ], 201);
+}
 
-        return response()->json([
-            'message' => 'Comment added successfully',
-            'data' => $comment
-        ], 201);
-    }
 
     /**
      * Update a specific comment.
