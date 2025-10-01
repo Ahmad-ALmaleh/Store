@@ -8,8 +8,19 @@ use App\Models\Comment;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Resources\CommentResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 class CommentController extends Controller
 {
+
+    use AuthorizesRequests;
+
+    public function __construct()
+    {
+        // نربط الكونترولر بالـ Policy
+        $this->authorizeResource(Comment::class, 'comment');
+    }
+
     /**
      * Display a listing of comments for a specific product.
      */

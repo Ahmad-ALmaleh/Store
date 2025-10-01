@@ -7,8 +7,16 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ProductStoreRequest;
 use App\Http\Requests\ProductUpdateRequest;
 use App\Http\Resources\ProductResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class ProductController extends Controller
 {
+    use AuthorizesRequests;
+
+    public function __construct()
+    {
+        // نربط الكونترولر بالـ Policy
+        $this->authorizeResource(Product::class, 'product');
+    }
     /**
      * Display a listing of the resource.
      */
