@@ -9,92 +9,81 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Resources\CommentResource;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-
+use Illuminate\Routing\Controller;
 class CommentController extends Controller
 {
-
     use AuthorizesRequests;
 
     public function __construct()
     {
-        // نربط الكونترولر بالـ Policy
+        /** @noinspection PhpUndefinedMethodInspection */
+        $this->middleware('auth');
+
+        // ربط الـ Policy تلقائيًا مع Resource Controller
         $this->authorizeResource(Comment::class, 'comment');
     }
 
     /**
-     * Display a listing of comments for a specific product.
+     * عرض جميع التعليقات لمنتج محدد مع Pagination.
      */
     public function index(Product $product)
     {
         $perPage = 5;
 
-        // جلب التعليقات مع المستخدم المرتبط، مختصرة، مع Pagination
         $comments = $product->comments()
-                            ->with(['user:id,name,profile_img_url'])
-                            ->orderBy('created_at', 'desc')
-                            ->paginate($perPage);
+            ->with('user:id,name,profile_img_url')
+            ->latest()
+            ->paginate($perPage);
 
-        // استجابة JSON
-        return CommentResource::collection(
-            $product->comments()
-                ->with('user') // جلب بيانات المستخدم
-                ->latest()
-                ->paginate(5)
-        );
+        return CommentResource::collection($comments);
     }
 
     /**
-     * Store a newly created comment for a product.
+     * إضافة تعليق جديد على المنتج.
      */
     public function store(CommentStoreRequest $request, Product $product)
-{
-    /** @var \App\Models\User $user */
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    $comment = $product->comments()->create([
-        'content' => $request->validated()['content'],
-        'user_id' => $user->id,
-    ]);
+        $comment = $product->comments()->create([
+            'content' => $request->validated()['content'],
+            'user_id' => $user->id,
+        ]);
 
-    return response()->json([
-        'message' => 'Comment added successfully',
-        'data' => new CommentResource($comment->load('user'))
-    ], 201);
-}
-
-
-    /**
-     * Update a specific comment.
-     */
-    public function update(UpdateCommentRequest $request, Product $product, Comment $comment)
-{
-    /** @var \App\Models\User $user */
-    $user = $request->user();
-
-    // التحقق من ملكية التعليق
-    if ($comment->user_id !== $user->id) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        return response()->json([
+            'message' => 'Comment added successfully',
+            'data' => new CommentResource($comment->load('user'))
+        ], 201);
     }
 
-    $comment->update([
-        'content' => $request->validated()['content'],
-    ]);
+    /**
+     * تعديل تعليق موجود.
+     */
+    public function update(UpdateCommentRequest $request, Product $product, Comment $comment)
+    {
+        $user = $request->user();
 
-    return response()->json([
-        'message' => 'Comment added successfully',
-        'data' => new CommentResource($comment->load('user'))
-    ], 201);
-}
+        if ($comment->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $comment->update([
+            'content' => $request->validated()['content'],
+        ]);
+
+        return response()->json([
+            'message' => 'Comment updated successfully',
+            'data' => new CommentResource($comment->load('user'))
+        ], 200);
+    }
 
     /**
-     * Remove a specific comment.
+     * حذف تعليق محدد.
      */
     public function destroy(Request $request, Product $product, Comment $comment)
     {
-        /** @var \App\Models\User $user */
         $user = $request->user();
 
-        // التحقق من ملكية التعليق
         if ($comment->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
