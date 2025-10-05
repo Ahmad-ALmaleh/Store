@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\Product;
+use App\DTOs\Product\StoreProductDTO;
+use App\DTOs\Product\UpdateProductDTO;
 
 class ProductRepository implements ProductRepositoryInterface
 {
@@ -51,10 +53,32 @@ class ProductRepository implements ProductRepositoryInterface
         return $product->load('discounts');
     }
 
-    public function update($id, array $data)
+    public function update($id, $data)
     {
         $product = Product::findOrFail($id);
-        $product->update($data);
+
+        if ($data instanceof UpdateProductDTO) {
+            $updateData = array_filter([
+                'name'        => $data->name,
+                'price'       => $data->price,
+                'description' => $data->description,
+                'exp_date'    => $data->exp_date,
+                'img_url'     => $data->img_url,
+                'quantity'    => $data->quantity,
+                'category_id' => $data->category_id,
+            ]);
+
+            $product->update($updateData);
+
+            if (!empty($data->discounts)) {
+                foreach ($data->discounts as $discountData) {
+                    $product->discounts()->create($discountData);
+                }
+            }
+        } else {
+            $product->update($data); // fallback if $data is array
+        }
+
         return $product;
     }
 

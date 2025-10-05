@@ -9,6 +9,10 @@ use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Routing\Controller;
+use App\DTOs\Product\StoreProductDTO;
+
+use App\DTOs\Product\UpdateProductDTO;
+
 
 class ProductController extends Controller
 {
@@ -41,24 +45,36 @@ class ProductController extends Controller
 
     public function store(ProductStoreRequest $request)
     {
-        $data = $request->validated();
-        $data['user_id'] = $request->user()->id;
-        $product = $this->productRepo->create($data);
+        $validated = $request->validated();
+
+        $dto = new StoreProductDTO(
+            name: $validated['name'],
+            price: $validated['price'],
+            description: $validated['description'] ?? null,
+            exp_date: $validated['exp_date'] ?? null,
+            img_url: $validated['img_url'] ?? null,
+            quantity: $validated['quantity'] ?? null,
+            category_id: $validated['category_id'],
+            user_id: $request->user()->id, // 🔥 إضافة user_id من المستخدم المسجل
+            discounts: $validated['discounts'] ?? []
+        );
+
+        $product = $this->productRepo->create($dto->toArray());
+
         return response()->json([
             'message' => 'Product created successfully',
-            'data' => $product->load('discounts')
+            'data'    => $product
         ], 201);
     }
 
     public function update(ProductUpdateRequest $request, $id)
     {
-        $product = $this->productRepo->update($id, $request->validated());
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
-        }
+        $dto = new UpdateProductDTO($request->validated());
+        $product = $this->productRepo->update($id, $dto);
+
         return response()->json([
             'message' => 'Product updated successfully',
-            'data' => $product
+            'data'    => $product
         ], 200);
     }
 
